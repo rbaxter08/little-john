@@ -1,0 +1,33 @@
+{
+    "manifest_version": 2,
+  
+    "name": "Little John",
+    "description": "This extension shows a Google Image search result for the current page",
+    "version": "1.0",
+  
+    "browser_action": {
+      "default_icon": "littleJohn.png",
+      "default_popup": "index.html"
+    },
+    "background": {
+      "persistent": false,
+      "scripts": ["background.js"]
+    },
+    "content_scripts": [
+      {
+        "css": ["test.css"],
+        "js": [
+          "./resources/findAndReplaceDOMText.js",
+          "./resources/lodash.js",
+          "content.js"
+        ],
+        "matches": ["https://*/*", "http://*/*"],
+        "run_at": "document_end"
+      }
+    ],
+    "permissions": [
+      "activeTab",
+      "https://ajax.googleapis.com/",
+      "https://api.robinhood.com/*"
+    ]
+  }
