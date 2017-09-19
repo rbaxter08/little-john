@@ -22,6 +22,8 @@ export default {
         this.$router.replace('/loading');
         RobinHood.authorize(this.username, this.password).then(() => {
           this.$router.replace('/home');
+        }, () => {
+          this.$router.replace('/');
         });
       },
       signUp: () => {

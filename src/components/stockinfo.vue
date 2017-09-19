@@ -4,8 +4,7 @@
 			<p>{{tickerInfo.name}}</p>
 			<p>${{tickerInfo.price}}</p>
 			<p>
-				{{symbol}}$<span class="price" v-bind:class="{neg: isNegative()}">{{getPriceChange()}}</span>
-				[<span class="price" v-bind:class="{neg: isNegative()}">{{symbol}}{{getPercentchange()}}%</span>] today
+				<span class="price" v-bind:class="{neg: isNegative()}">{{symbol}}${{getPriceChange()}} [{{symbol}}{{getPercentchange()}}%]</span> today
 			</p>
 		</div>
 	</div>

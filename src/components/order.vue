@@ -42,9 +42,6 @@ export default {
 	props: ['ticker', 'action'],
 	data() {
 		return {
-			tickerInfo: {
-				price: 0,
-			},
 			orderType: 'market',
 			duration: 'gtc',
 			numShares: '',
@@ -71,7 +68,7 @@ export default {
 				}
 			},
 			getTotal: () => {
-				return this.orderType === 'market' ? this.tickerInfo.price * this.numShares : this.limitPrice * this.numShares;
+				return this.orderType === 'market' ? RobinHood.getTickerInfo().price * this.numShares : this.limitPrice * this.numShares;
 			},
 			cancel: () => {
 				this.$router.replace('/home');

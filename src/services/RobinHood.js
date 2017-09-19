@@ -13,6 +13,7 @@ class RobinHood {
       price: 0,
       previousPrice: 0,
       name: '',
+      url: '',
     }
     this.price = {
       price: 0,
@@ -45,26 +46,19 @@ class RobinHood {
 
   placeOrder(orderRequest) {
     
-    // get stock url
+    _.extend(orderRequest, {
+      account: this.account.url,
+      instrument: this.tickerInfo.url,
+    })
+
+    //send buy request
     return this._http({
-      method: 'get',
-      url: `${robinUrl}instruments/?symbol=${orderRequest.symbol}`,
-    }).then(resp => {
-
-      _.extend(orderRequest, {
-        account: this.account.url,
-        instrument: resp.results[0].url,
-      })
-
-      //send buy request
-      this._http({
-        method: 'post',
-        url: `${robinUrl}orders/`,
-        data: orderRequest,
-        headers: {
-          Authorization: `Token ${this.account.token}`,
-        }
-      });
+      method: 'post',
+      url: `${robinUrl}orders/`,
+      data: orderRequest,
+      headers: {
+        Authorization: `Token ${this.account.token}`,
+      }
     });
   }
 
@@ -83,7 +77,16 @@ class RobinHood {
     }).then(data => {
       this.tickerInfo.price = data.results[0]['ask_price'];
       this.tickerInfo.previousPrice = data.results[0]['previous_close'];
-      this.tickerInfo.name = data.results[0].name;
+    });
+
+    // get stock url
+    return this._http({
+      method: 'get',
+      url: `${robinUrl}instruments/?symbol=${ticker}`,
+    }).then(resp => {
+      this.tickerInfo.url = resp.results[0].url;
+      this.tickerInfo.name = resp.results[0].name;
+      
     });
   }
 
@@ -91,9 +94,6 @@ class RobinHood {
     return axios(requestObj)
     .then(resp => {
       return resp.data;
-    })
-    .catch(err => {
-      console.log(err);
     });
   }
 }
