@@ -8,6 +8,7 @@ class RobinHood {
     this.account = {
       token: '',
       url: '',
+      buyPower: 0,
     };
     this.tickerInfo = {
       price: 0,
@@ -31,6 +32,7 @@ class RobinHood {
     }).then(data => {
       this.account.token = data.token;
 
+
       //lets get account while we're at it
       return this._http({
         method: 'get',
@@ -40,6 +42,7 @@ class RobinHood {
         }
       }).then(data => {
         this.account.url = data.results[0].url;
+        this.account.buyPower = data.results[0]["buying_power"];
       });
     });
   }
@@ -68,6 +71,10 @@ class RobinHood {
 
   getTickerInfo() {
     return this.tickerInfo;
+  }
+
+  getAccount() {
+    return this.account;
   }
 
   getQuote(ticker) {

@@ -27,6 +27,10 @@
 			<p>${{getTotal()}}</p>
 		</div>
 		<div class="stock-control">
+			<p></p>
+			<p>buying power: ${{getBuyPower().buyPower}}</p>
+		</div>
+		<div class="stock-control">
 			<button type="button" v-on:click="cancel()">Cancel</button>
 			<button type="button" v-on:click="order()">Place Order</button>
 		</div>
@@ -66,6 +70,9 @@ export default {
 				} else {
 					this.$router.replace('/home');
 				}
+			},
+			getBuyPower: () => {
+				return RobinHood.getAccount();
 			},
 			getTotal: () => {
 				return this.orderType === 'market' ? RobinHood.getTickerInfo().price * this.numShares : this.limitPrice * this.numShares;
