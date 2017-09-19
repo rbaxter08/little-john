@@ -1,13 +1,19 @@
 import axios from 'axios';
+import _ from 'lodash';
 
 const robinUrl = 'https://api.robinhood.com/';
 
 class RobinHood {
   constructor() {
-    this.token = {
+    this.account = {
       token: '',
-      account: '',
+      url: '',
     };
+    this.tickerInfo = {
+      price: 0,
+      previousPrice: 0,
+      name: '',
+    }
     this.price = {
       price: 0,
     }
@@ -22,17 +28,17 @@ class RobinHood {
         password: password,
       },
     }).then(data => {
-      this.token.token = data.token;
+      this.account.token = data.token;
 
       //lets get account while we're at it
       return this._http({
         method: 'get',
         url: `${robinUrl}accounts/`,
         headers: {
-          Authorization: `Token ${this.token.token}`,
+          Authorization: `Token ${this.account.token}`,
         }
       }).then(data => {
-        this.token.account = data.results[0].url;
+        this.account.url = data.results[0].url;
       });
     });
   }
@@ -46,7 +52,7 @@ class RobinHood {
     }).then(resp => {
 
       _.extend(orderRequest, {
-        account: this.token.account,
+        account: this.account.url,
         instrument: resp.results[0].url,
       })
 
@@ -56,18 +62,18 @@ class RobinHood {
         url: `${robinUrl}orders/`,
         data: orderRequest,
         headers: {
-          Authorization: `Token ${this.token.token}`,
+          Authorization: `Token ${this.account.token}`,
         }
       });
     });
   }
 
   getToken() {
-    return this.token;
+    return this.account.token;
   }
 
-  getPrice() {
-    return this.price;
+  getTickerInfo() {
+    return this.tickerInfo;
   }
 
   getQuote(ticker) {
@@ -75,7 +81,9 @@ class RobinHood {
       method: 'get',
       url: `${robinUrl}/quotes/?symbols=${ticker}`,
     }).then(data => {
-      this.price.price = data.results[0]['ask_price'];
+      this.tickerInfo.price = data.results[0]['ask_price'];
+      this.tickerInfo.previousPrice = data.results[0]['previous_close'];
+      this.tickerInfo.name = data.results[0].name;
     });
   }
 

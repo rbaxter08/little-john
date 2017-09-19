@@ -1,16 +1,13 @@
 
 
 design:
-fix sign in / sign up font
-fix textbox font
-banner size smaller
-
+make dictionary
+error messages
+loading bars
 
 Function:
 
-Donate button
-sign up button
-vue-router instead of v-if bs lol
+
 change to on-hover, move box instead of re-opening
 set focus into sign in text box
 confirmations for purchases / errors
