@@ -30,25 +30,49 @@ class RobinHood {
         password: password,
       },
     }).then(data => {
-      this.account.token = data.token;
-
-
-      //lets get account while we're at it
-      return this._http({
-        method: 'get',
-        url: `${robinUrl}accounts/`,
-        headers: {
-          Authorization: `Token ${this.account.token}`,
+      if (data['mfa_required']) { //to factor auth required
+        return {
+          username: username,
+          password: password,
+          mfa: true,
         }
-      }).then(data => {
-        this.account.url = data.results[0].url;
-        this.account.buyPower = data.results[0]["buying_power"];
-      });
+      } else { //no two factor
+        this.account.token = data.token;
+
+        //lets get account while we're at it
+        return this.getAccountInfo(username, password);
+      }
+    });
+  }
+
+  confirmMFA(data) {
+    return this._http({
+      method: 'post',
+      url: `${robinUrl}api-token-auth/`,
+      data: data,
+    }).then(data => {
+      this.account.token = data.token;
+      
+      //lets get account while we're at it
+      return this.getAccountInfo(data.username, data.password);
+    });
+  }
+
+  getAccountInfo() {
+    return this._http({
+      method: 'get',
+      url: `${robinUrl}accounts/`,
+      headers: {
+        Authorization: `Token ${this.account.token}`,
+      }
+    }).then(data => {
+      this.account.url = data.results[0].url;
+      this.account.buyPower = data.results[0]["buying_power"];
     });
   }
 
   placeOrder(orderRequest) {
-    
+
     _.extend(orderRequest, {
       account: this.account.url,
       instrument: this.tickerInfo.url,
@@ -93,15 +117,15 @@ class RobinHood {
     }).then(resp => {
       this.tickerInfo.url = resp.results[0].url;
       this.tickerInfo.name = resp.results[0].name;
-      
+
     });
   }
 
   _http(requestObj) {
     return axios(requestObj)
-    .then(resp => {
-      return resp.data;
-    });
+      .then(resp => {
+        return resp.data;
+      });
   }
 }
 

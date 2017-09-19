@@ -2,7 +2,6 @@
   <div id="app">
     <div class="header">
       <p class="title">{{state.ticker}}</p>
-      <button class="donate" type="button" v-on:click="donate()">Donate&nbsp;♥</button>
     </div>
     <stockinfo v-bind:ticker="state.ticker"></stockinfo>
     <router-view v-bind:ticker="state.ticker" v-bind:action="state.action">
@@ -34,11 +33,6 @@ export default {
   data() {
     return {
       state: store.state,
-      donate: () => {
-        chrome.runtime.sendMessage({
-          type: 'donate',
-        });
-      },
     };
   },
   mounted: () => {
