@@ -1,7 +1,7 @@
 <template>
 	<div class="stock-action">
 		<div class="stock-control">
-			<p>Shares to {{action}}:</p>
+			<p>Shares to {{getAction()}}:</p>
 			<input class="user-input" v-model="numShares" placeholder="# of shares"></input>
 		</div>
 		<div class="stock-control">
@@ -26,9 +26,13 @@
 			<p>Total:</p>
 			<p>${{getTotal()}}</p>
 		</div>
-		<div class="stock-control">
+		<div v-if="getAction() === 'buy'" class="stock-control">
 			<p></p>
-			<p>buying power: ${{getBuyPower().buyPower}}</p>
+			<p>buying power: ${{getBuyPower()}}</p>
+		</div>
+		<div v-if="getAction() === 'sell'" class="stock-control">
+			<p></p>
+			<p>Shares Held: {{getNumShares()}}</p>
 		</div>
 		<div class="stock-control">
 			<button type="button" v-on:click="cancel()">Cancel</button>
@@ -43,7 +47,6 @@ import RobinHood from '../services/RobinHood.js';
 
 export default {
 	name: 'order',
-	props: ['ticker', 'action'],
 	data() {
 		return {
 			orderType: 'market',
@@ -51,31 +54,33 @@ export default {
 			numShares: '',
 			limitPrice: '',
 			order: () => {
-				if (RobinHood.getToken()) {
-					this.$router.replace('/loading');
-					RobinHood.placeOrder({
-						symbol: this.ticker,
-						type: this.orderType,
-						price: this.limitPrice || 1,
-						time_in_force: this.duration,
-						trigger: 'immediate',
-						quantity: this.numShares,
-						side: this.action,
-					}).then((resp) => {
-						this.cancel();  //return home
-					}, (err) => {
-						console.log(err);
-						this.cancel();  //return home
-					});
-				} else {
-					this.$router.replace('/home');
-				}
+				this.$router.replace('/loading');
+				RobinHood.placeOrder({
+					symbol: this.$store.state.ticker.symbol,
+					type: this.orderType,
+					price: this.limitPrice || 1,
+					time_in_force: this.duration,
+					trigger: 'immediate',
+					quantity: this.numShares,
+					side: this.getAction(),
+				}).then((resp) => {
+					this.cancel();  //return home
+				}, (err) => {
+					console.log(err);
+					this.cancel();  //return home
+				});
+			},
+			getNumShares: () => {
+				return this.$store.state.ticker.numHolding;
 			},
 			getBuyPower: () => {
-				return RobinHood.getAccount();
+				return this.$store.state.account.buyPower;
 			},
 			getTotal: () => {
-				return this.orderType === 'market' ? RobinHood.getTickerInfo().price * this.numShares : this.limitPrice * this.numShares;
+				return this.orderType === 'market' ? this.$store.state.ticker.price * this.numShares : this.limitPrice * this.numShares;
+			},
+			getAction: () => {
+				return this.$store.state.action;
 			},
 			cancel: () => {
 				this.$router.replace('/home');
@@ -88,14 +93,14 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .stock-action {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
 }
 
 .stock-control {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
 }
 </style>

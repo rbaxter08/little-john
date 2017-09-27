@@ -1,10 +1,10 @@
 <template>
 	<div id="stockinfo">
 		<div class="ticker-info">
-			<p>{{tickerInfo.name}}</p>
-			<p>${{tickerInfo.price}}</p>
+			<p>{{name}}</p>
+			<p>${{price}}</p>
 			<p>
-				<span class="price" v-bind:class="{neg: isNegative()}">{{symbol}}${{getPriceChange()}} [{{symbol}}{{getPercentchange()}}%]</span> today
+				<span class="price" v-bind:class="{neg: isNegative()}">{{priceDirection}}${{getPriceChange()}} [{{priceDirection}}{{getPercentchange()}}%]</span> Today
 			</p>
 		</div>
 	</div>
@@ -15,46 +15,51 @@ import RobinHood from '../services/RobinHood.js';
 
 export default {
 	name: 'stockinfo',
-	props: ['ticker'],
 	data() {
 		return {
-			symbol: '+',
-			tickerInfo: RobinHood.getTickerInfo(),
+			priceDirection: '+',
 			getPriceChange: () => {
-				let priceChange = (this.tickerInfo.price - this.tickerInfo.previousPrice).toFixed(2);
-				this.symbol = priceChange > 0 ? '+' : '-';
-        return priceChange;
+				let price = this.$store.state.ticker.price;
+				let previousPrice = this.$store.state.ticker.previousPrice;
+
+				let priceChange = (price - previousPrice).toFixed(2);
+				this.priceDirection = priceChange > 0 ? '+' : '-';
+				return priceChange;
 			},
-			getPercentchange: () => {			
-				let change = Math.abs((this.getPriceChange() / this.tickerInfo.price) * 100);
+			getPercentchange: () => {
+				let price = this.$store.state.ticker.price;
+				let change = Math.abs((this.getPriceChange() / price) * 100);
 				return change.toFixed(0);
 			},
 			isNegative: () => {
-				return this.symbol !== '+';
-			}
+				return this.priceDirection !== '+';
+			},
+		};
+	},
+	methods: {
+
+	},
+	computed: {
+		price() {
+			return this.$store.state.ticker.price;
+		},
+		name() {
+			return this.$store.state.ticker.name;
+		},
+		symbol() {
+			return this.$store.state.ticker.symbol;
 		}
 	},
-	watch: {
-		ticker: (newVal) => {
-			function quote() {
-				RobinHood.getQuote(newVal);
-			}
-
-			quote();
-			setInterval(quote, 10000);
-		}
-	}
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-
 .price {
-  color: #1faa00;
+	color: #1faa00;
 }
 
 .neg {
-  color: #ff4528;
+	color: #ff4528;
 }
 </style>

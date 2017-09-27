@@ -1,44 +1,54 @@
 <template>
   <div id="app">
     <div class="header">
-      <p class="title">{{state.ticker}}</p>
+      <p class="title">{{symbol}}</p>
     </div>
-    <stockinfo v-bind:ticker="state.ticker"></stockinfo>
-    <router-view v-bind:ticker="state.ticker" v-bind:action="state.action">
-    </router-view>
+    <stockinfo></stockinfo>
+    <router-view></router-view>
   </div>
 </template>
 
 <script>
 import stockinfo from './components/stockinfo.vue';
 import RobinHood from './services/RobinHood.js';
-import { bus } from './services/eventbus.js';
-
-const store = {
-  state: {
-    ticker: 'Little John',
-    action: '',
-  }
-}
-
-bus.$on('order', (type) => {
-  store.state.action = type;
-});
 
 export default {
   name: 'App',
   components: {
     stockinfo,
   },
-  data() {
-    return {
-      state: store.state,
-    };
+  methods: {
+    getQuote() {
+				RobinHood.getQuote(this.$store.state.ticker.symbol).then((resp) => {
+					this.$store.commit('setTickerData', {
+						price: resp['ask_price'],
+						previousPrice: resp['previous_close'],
+					});
+				});
+			},
+			getInfo() {
+				RobinHood.getTickerInfo(this.$store.state.ticker.symbol).then((resp) => {
+					this.$store.commit('setTickerData', {
+						url: resp.url,
+						name: resp.name,
+          });
+				});
+      },
   },
-  mounted: () => {
+  mounted () {
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg.type === 'tickerInfo') {
-        store.state.ticker = msg.ticker.match(/-\$?(.*)-/)[1];
+        let symbol = msg.ticker.match(/-\$?(.*)-/)[1];
+        this.$store.commit('clear');
+        this.$store.commit('setTickerData', {symbol: symbol});
+        this.getQuote();
+        this.getInfo();
+        if (this.$store.state.account.token) {
+          this.$router.replace('/home');
+          RobinHood.getPositions();
+        } else {
+          this.$router.replace('/');
+        }
       }
     });
 
@@ -46,6 +56,11 @@ export default {
       type: 'tickerRequest',
     });
   },
+  computed: {
+    symbol () {
+      return this.$store.state.ticker.symbol;
+    }
+  }
 }
 </script>
 

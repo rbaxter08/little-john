@@ -7,14 +7,14 @@
 
 <script>
 
-import {bus} from '../services/eventbus.js';
+import RobinHood from '../services/RobinHood.js';
 
 export default {
   name: 'home',
   data() {
     return {
       order: (type) => {
-        bus.$emit('order', type);
+        this.$store.commit('setAction', type);
         this.$router.replace('/order');
       },
     };

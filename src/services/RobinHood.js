@@ -1,25 +1,11 @@
 import axios from 'axios';
 import _ from 'lodash';
+import store from '../store.js'
 
 const robinUrl = 'https://api.robinhood.com/';
 
 class RobinHood {
-  constructor() {
-    this.account = {
-      token: '',
-      url: '',
-      buyPower: 0,
-    };
-    this.tickerInfo = {
-      price: 0,
-      previousPrice: 0,
-      name: '',
-      url: '',
-    }
-    this.price = {
-      price: 0,
-    }
-  }
+  constructor() {}
 
   authorize(username, password) {
     return this._http({
@@ -37,7 +23,7 @@ class RobinHood {
           mfa: true,
         }
       } else { //no two factor
-        this.account.token = data.token;
+        store.commit('setAccount', {token: data.token});
 
         //lets get account while we're at it
         return this.getAccountInfo(username, password);
@@ -51,7 +37,7 @@ class RobinHood {
       url: `${robinUrl}api-token-auth/`,
       data: data,
     }).then(data => {
-      this.account.token = data.token;
+      store.commit('setAccount', {token: data.token});
       
       //lets get account while we're at it
       return this.getAccountInfo(data.username, data.password);
@@ -63,20 +49,25 @@ class RobinHood {
       method: 'get',
       url: `${robinUrl}accounts/`,
       headers: {
-        Authorization: `Token ${this.account.token}`,
+        Authorization: `Token ${store.state.account.token}`,
       }
     }).then(data => {
-      this.account.url = data.results[0].url;
-      this.account.buyPower = data.results[0]["buying_power"];
+      let account = data.results[0];
+      store.commit('setAccount', {
+        url: account.url,
+        buyPower: account["buying_power"],
+        positionsURL: account.positions,
+      });
+      this.getPositions();
     });
   }
 
   placeOrder(orderRequest) {
 
     _.extend(orderRequest, {
-      account: this.account.url,
-      instrument: this.tickerInfo.url,
-    })
+      account: store.state.account.url,
+      instrument: store.state.ticker.url,
+    });
 
     //send buy request
     return this._http({
@@ -84,40 +75,56 @@ class RobinHood {
       url: `${robinUrl}orders/`,
       data: orderRequest,
       headers: {
-        Authorization: `Token ${this.account.token}`,
+        Authorization: `Token ${store.state.account.token}`,
       }
+    }).then((resp) => {
+      this.getPositions(); //update positions
+      this.getAccountInfo(); //update buyPower
+      return resp;
     });
   }
 
-  getToken() {
-    return this.account.token;
-  }
+  getPositions() {
+    return this._http({
+      method: 'get',
+      url: store.state.account.positionsURL,
+      headers: {
+        Authorization: `Token ${store.state.account.token}`,
+      },
+    }).then((resp) => {
+      let found = false;
+      _.each(resp.results, (stock) => {
+        if (stock.instrument === store.state.ticker.url) {
+          let numHeld = parseInt(stock.quantity) - parseInt(stock["shares_held_for_sells"]);
+          store.commit('setTickerData', {numHolding: numHeld});
+          found = true;
+          return false;  //break out of each
+        }
 
-  getTickerInfo() {
-    return this.tickerInfo;
-  }
-
-  getAccount() {
-    return this.account;
+        if (!found && resp.next) {
+          getPosition(resp.next);
+        } else {
+          store.commit('setTickerData', {numHolding: 0});
+        }
+      });
+    });
   }
 
   getQuote(ticker) {
-    this._http({
+    return this._http({
       method: 'get',
-      url: `${robinUrl}/quotes/?symbols=${ticker}`,
+      url: `${robinUrl}quotes/?symbols=${ticker}`,
     }).then(data => {
-      this.tickerInfo.price = data.results[0]['ask_price'];
-      this.tickerInfo.previousPrice = data.results[0]['previous_close'];
+      return data.results[0];
     });
+  }
 
-    // get stock url
+  getTickerInfo(ticker) {
     return this._http({
       method: 'get',
       url: `${robinUrl}instruments/?symbol=${ticker}`,
     }).then(resp => {
-      this.tickerInfo.url = resp.results[0].url;
-      this.tickerInfo.name = resp.results[0].name;
-
+      return resp.results[0];
     });
   }
 
@@ -125,6 +132,8 @@ class RobinHood {
     return axios(requestObj)
       .then(resp => {
         return resp.data;
+      }).catch(err => {
+        console.log(err);
       });
   }
 }
